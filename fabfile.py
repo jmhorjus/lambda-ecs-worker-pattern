@@ -39,16 +39,15 @@ from cStringIO import StringIO
 from config import *
 
 # Constants (Application specific)
-BUCKET_POSTFIX = '-pov-ray-bucket'  # Gets put after the unix user ID to create the bucket name.
+BUCKET_POSTFIX = 'pov-ray-bucket'  # Gets put after the unix user ID to create the bucket name.
 SSH_KEY_DIR = os.environ['HOME'] + '/.ssh'
 SQS_QUEUE_NAME = APP_NAME + 'Queue'
-LAMBDA_FUNCTION_NAME = 'ecs-worker-launcher'
+LAMBDA_FUNCTION_NAME = APP_NAME + '-ecs-worker-launcher'
 LAMBDA_FUNCTION_DEPENDENCIES = 'async'
 ECS_TASK_NAME = APP_NAME + 'Task'
 
 # Constants (OS specific)
-USER = os.environ['HOME'].split('/')[-1]
-AWS_BUCKET = USER + BUCKET_POSTFIX
+AWS_BUCKET = APP_NAME + '-' + BUCKET_POSTFIX
 AWS_CONFIG_FILE_NAME = os.environ['HOME'] + '/.aws/config'
 AWS_CREDENTIAL_FILE_NAME = os.environ['HOME'] + '/.aws/credentials'
 
@@ -380,6 +379,8 @@ def update_lambda_function():
         print('Deleting existing Lambda function ' + LAMBDA_FUNCTION_NAME + '.')
         delete_lambda_function()
 
+    print "calling local with function name = " + LAMBDA_FUNCTION_NAME
+
     local(
         'aws lambda create-function' +
         '    --function-name ' + LAMBDA_FUNCTION_NAME +
@@ -411,6 +412,7 @@ def get_s3_connection():
 def get_or_create_bucket():
     s3 = get_s3_connection()
     b = s3.lookup(AWS_BUCKET)
+    print b
     if b is None:
         print('Creating bucket: ' + AWS_BUCKET + ' in region: ' + AWS_REGION + '...')
         LOCATION = AWS_REGION if AWS_REGION != 'us-east-1' else ''
@@ -555,7 +557,7 @@ def get_container_instances():
     result = json.loads(local(
         'aws ecs list-container-instances' +
         '    --query containerInstanceArns' +
-        '    --cluster ' + ECS_CLUSTER + 
+        '    --cluster ' + ECS_CLUSTER +
         AWS_CLI_STANDARD_OPTIONS,
         capture=True
     ))
@@ -587,6 +589,7 @@ def prepare_env():
     env.host_string = get_first_ecs_instance_ip()
     env.user = SSH_USER
     env.key_filename = SSH_KEY_DIR + '/' + SSH_KEY_NAME
+    print env
 
 
 def generate_dockerfile():
@@ -614,7 +617,9 @@ def update_ecs_image():
         #run('docker login -u ' + DOCKERHUB_USER + ' -e ' + DOCKERHUB_EMAIL)
         login_str = local('aws ecr get-login', capture=True)
         print(login_str)
+        print "DOCKERHUB_TAG=" + DOCKERHUB_TAG
         run('%s' % login_str)
+        run('docker images')
         run('docker push ' + DOCKERHUB_TAG)
 
     # Cleanup.

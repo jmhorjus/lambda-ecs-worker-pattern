@@ -388,8 +388,6 @@ def update_lambda_function():
         print('Deleting existing Lambda function ' + LAMBDA_FUNCTION_NAME + '.')
         delete_lambda_function()
 
-    print "calling local with function name = " + LAMBDA_FUNCTION_NAME
-
     local(
         'aws lambda create-function' +
         '    --function-name ' + LAMBDA_FUNCTION_NAME +
@@ -598,8 +596,6 @@ def prepare_env():
     env.host_string = get_first_ecs_instance_ip()
     env.user = SSH_USER
     env.key_filename = SSH_KEY_DIR + '/' + SSH_KEY_NAME
-    print env
-
 
 def generate_dockerfile():
     return DOCKERFILE % {'name': FULL_NAME_AND_EMAIL, 'worker_file': WORKER_FILE}
@@ -626,7 +622,6 @@ def update_ecs_image():
         #run('docker login -u ' + DOCKERHUB_USER + ' -e ' + DOCKERHUB_EMAIL)
         login_str = local('aws ecr get-login', capture=True)
         print(login_str)
-        print "DOCKERHUB_TAG=" + DOCKERHUB_TAG
         run('%s' % login_str)
         run('docker images')
         run('docker push ' + DOCKERHUB_TAG)
@@ -652,7 +647,6 @@ def show_task_definition():
 
 def update_ecs_task_definition():
     task_definition_string = json.dumps(generate_task_definition())
-    print "task_definition=" + task_definition_string
     local(
         'aws ecs register-task-definition' +
         '    --family ' + ECS_TASK_NAME +
@@ -728,7 +722,6 @@ def get_queue_url():
     if result is not None and result != '':
         result_struct = json.loads(result)
         if isinstance(result_struct, dict) and 'QueueUrls' in result_struct:
-            print result_struct['QueueUrls']
             for u in result_struct['QueueUrls']:
                 if u.split('/')[-1] == SQS_QUEUE_NAME:
                     return u

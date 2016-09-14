@@ -43,6 +43,7 @@ BUCKET_POSTFIX = 'pov-ray-bucket'  # Gets put after the unix user ID to create t
 SSH_KEY_DIR = os.environ['HOME'] + '/.ssh'
 SQS_QUEUE_NAME = APP_NAME + 'Queue'
 LAMBDA_FUNCTION_NAME = APP_NAME + '-ecs-worker-launcher'
+LAMBDA_FUNCTION_SUBDIR = 'ecs-worker-launcher'
 LAMBDA_FUNCTION_DEPENDENCIES = 'async'
 ECS_TASK_NAME = APP_NAME + 'Task'
 
@@ -110,7 +111,7 @@ LAMBDA_FUNCTION_CONFIG = {
     "task": ECS_TASK_NAME
 }
 
-LAMBDA_FUNCTION_CONFIG_PATH = './' + LAMBDA_FUNCTION_NAME + '/config.json'
+LAMBDA_FUNCTION_CONFIG_PATH = './' + LAMBDA_FUNCTION_SUBDIR + '/config.json'
 
 BUCKET_NOTIFICATION_CONFIGURATION = {
     "LambdaFunctionConfigurations": [
@@ -131,9 +132,14 @@ ECS_ROLE_BUCKET_ACCESS_POLICY = {
         {
             "Effect": "Allow",
             "Action": [
-                "s3:ListAllMyBuckets"
+                "s3:ListAllMyBuckets",
+                "sqs:ReceiveMessage"
             ],
-            "Resource": "arn:aws:s3:::*"
+            "Resource": [
+                "arn:aws:s3:::*",
+                "arn:aws:sqs:*:*:*"
+            ]
+
         },
         {
             "Effect": "Allow",
@@ -248,7 +254,7 @@ POV_RAY_SCENE_FILES = [
 
 def update_dependencies():
     local('pip2 install -r requirements.txt')
-    local('cd ' + LAMBDA_FUNCTION_NAME + '; npm install ' + LAMBDA_FUNCTION_DEPENDENCIES)
+    local('cd ' + LAMBDA_FUNCTION_SUBDIR + '; npm install ' + LAMBDA_FUNCTION_DEPENDENCIES)
 
 
 def get_aws_credentials():
@@ -271,6 +277,7 @@ def dump_lambda_function_configuration():
     print('Writing config for Lambda function...')
     lambda_function_config = LAMBDA_FUNCTION_CONFIG.copy()
     lambda_function_config['queue'] = get_queue_url()
+    lambda_function_config['cluster'] = ECS_CLUSTER
     with open(LAMBDA_FUNCTION_CONFIG_PATH, 'w') as fp:
         fp.write(json.dumps(lambda_function_config))
 
@@ -279,7 +286,7 @@ def create_lambda_deployment_package():
     print('Creating ZIP file: ' + ZIPFILE_NAME + '...')
     with ZipFile(ZIPFILE_NAME, 'w', ZIP_DEFLATED) as z:
         saved_dir = os.getcwd()
-        os.chdir(LAMBDA_FUNCTION_NAME)
+        os.chdir(LAMBDA_FUNCTION_SUBDIR)
         for root, dirs, files in os.walk('.'):
             for basename in files:
                 filename = os.path.join(root, basename)
@@ -643,7 +650,7 @@ def show_task_definition():
 
 def update_ecs_task_definition():
     task_definition_string = json.dumps(generate_task_definition())
-
+    print "task_definition=" + task_definition_string
     local(
         'aws ecs register-task-definition' +
         '    --family ' + ECS_TASK_NAME +
@@ -719,6 +726,7 @@ def get_queue_url():
     if result is not None and result != '':
         result_struct = json.loads(result)
         if isinstance(result_struct, dict) and 'QueueUrls' in result_struct:
+            print result_struct['QueueUrls']
             for u in result_struct['QueueUrls']:
                 if u.split('/')[-1] == SQS_QUEUE_NAME:
                     return u

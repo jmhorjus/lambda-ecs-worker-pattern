@@ -14,4 +14,4 @@ AWS_REGION = 'us-east-1'
 AWS_PROFILE = 'default'  # The same profile used by your AWS CLI installation
 
 SSH_KEY_NAME = 'automation.pem'  # Expected to be in ~/.ssh
-ECS_CLUSTER = 'yachna-test'
+ECS_CLUSTER = 'peter'

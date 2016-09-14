@@ -25,7 +25,7 @@ queue=${SQS_QUEUE_URL}
 # Fetch messages and render them until the queue is drained.
 while [ /bin/true ]; do
     # Fetch the next message and extract the S3 URL to fetch the POV-Ray source ZIP from.
-    echo "Fetching messages fom SQS queue: ${queue}..." >> peter.out
+    echo "Fetching messages fom SQS queue: ${queue}..."
     result=$( \
         aws sqs receive-message \
             --queue-url ${queue} \
@@ -36,19 +36,19 @@ while [ /bin/true ]; do
     )
 
     if [ -z "${result}" ]; then
-        echo "No messages left in queue. Exiting." >> peter.out
-        #exit 0
+        echo "No messages left in queue. Exiting."
+        exit 0
     else
-        echo "Message: ${result}." >> peter.out
+        echo "Message: ${result}."
 
         receipt_handle=$(echo ${result} | sed -e 's/^.*"\([^"]*\)"\s*\]$/\1/')
-        echo "Receipt handle: ${receipt_handle}." >> peter.out
+        echo "Receipt handle: ${receipt_handle}."
 
         bucket=$(echo ${result} | sed -e 's/^.*arn:aws:s3:::\([^\\]*\)\\".*$/\1/')
-        echo "Bucket: ${bucket}." >> peter.out
+        echo "Bucket: ${bucket}."
 
         key=$(echo ${result} | sed -e 's/^.*\\"key\\":\s*\\"\([^\\]*\)\\".*$/\1/')
-        echo "Key: ${key}." >> peter.out
+        echo "Key: ${key}."
 
         base=${key%.*}
         ext=${key##*.}
@@ -61,50 +61,43 @@ while [ /bin/true ]; do
             -n "${ext}" -a \
             "${ext}" = "zip" \
         ]; then
-            echo "Inside if statement..." >> peter.out
-
             mkdir -p work
+            pushd work
 
-            echo "Now here 1..." >> peter.out
-
-            cd work
-
-            echo "Now here 2..." >> peter.out
-
-            echo "Copying ${key} from S3 bucket ${bucket}..." >> peter.out
+            echo "Copying ${key} from S3 bucket ${bucket}..."
             aws s3 cp s3://${bucket}/${key} . --region ${region}
 
-            echo "Unzipping ${key}..." >> peter.out
+            echo "Unzipping ${key}..."
             unzip ${key}
 
             if [ -f ${base}.ini ]; then
-                echo "Rendering POV-Ray scene ${base}..." >> peter.out
+                echo "Rendering POV-Ray scene ${base}..."
                 if povray ${base}; then
                     if [ -f ${base}.png ]; then
-                        echo "Copying result image ${base}.png to s3://${bucket}/${base}.png..." >> peter.out
+                        echo "Copying result image ${base}.png to s3://${bucket}/${base}.png..."
                         aws s3 cp ${base}.png s3://${bucket}/${base}.png
                     else
-                        echo "ERROR: POV-Ray source did not generate ${base}.png image." >> peter.out
+                        echo "ERROR: POV-Ray source did not generate ${base}.png image."
                     fi
                 else
-                    echo "ERROR: POV-Ray source did not render successfully." >> peter.out
+                    echo "ERROR: POV-Ray source did not render successfully."
                 fi
             else
-                echo "ERROR: No ${base}.ini file found in POV-Ray source archive." >> peter.out
+                echo "ERROR: No ${base}.ini file found in POV-Ray source archive."
             fi
 
-            echo "Cleaning up..." >> peter.out
-            cd ..
+            echo "Cleaning up..."
+            popd
             /bin/rm -rf work
 
-            echo "Deleting message..." >> peter.out
+            echo "Deleting message..."
             aws sqs delete-message \
                 --queue-url ${queue} \
                 --region ${region} \
                 --receipt-handle "${receipt_handle}"
 
         else
-            echo "ERROR: Could not extract S3 bucket and key from SQS message." >> peter.out
+            echo "ERROR: Could not extract S3 bucket and key from SQS message."
         fi
     fi
 done

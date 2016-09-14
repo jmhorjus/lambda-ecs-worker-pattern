@@ -36,8 +36,7 @@ while [ /bin/true ]; do
     )
 
     if [ -z "${result}" ]; then
-        echo "No messages left in queue. Exiting."  >> ecs-test.log
-        exit 0
+        sleep 1 # sleep for one second
     else
         echo "Message: ${result}."  >> ecs-test.log
 
@@ -64,40 +63,25 @@ while [ /bin/true ]; do
             mkdir -p work
             pushd work
 
-            echo "Copying ${key} from S3 bucket ${bucket}..."  >> ecs-test.log
+            echo "Copying ${key} from S3 bucket ${bucket}..."  >> ../ecs-test.log
             aws s3 cp s3://${bucket}/${key} . --region ${region}
 
-            echo "Unzipping ${key}..."  >> ecs-test.log
-            unzip ${key}
+            rand = $RANDOM
+            echo "Copy log file to S3 bucket. RANDOM=${rand}"  >> ../ecs-test.log
+            aws s3 cp ../ecs-test.log s3://${bucket}/ecs-test.${rand}.log
 
-            if [ -f ${base}.ini ]; then
-                echo "Rendering POV-Ray scene ${base}..."  >> ecs-test.log
-                if povray ${base}; then
-                    if [ -f ${base}.png ]; then
-                        echo "Copying result image ${base}.png to s3://${bucket}/${base}.png..."  >> ecs-test.log
-                        aws s3 cp ${base}.png s3://${bucket}/${base}.png
-                    else
-                        echo "ERROR: POV-Ray source did not generate ${base}.png image."  >> ecs-test.log
-                    fi
-                else
-                    echo "ERROR: POV-Ray source did not render successfully."  >> ecs-test.log
-                fi
-            else
-                echo "ERROR: No ${base}.ini file found in POV-Ray source archive."  >> ecs-test.log
-            fi
-
-            echo "Cleaning up..."  >> ecs-test.log
+            echo "Cleaning up..."  >> ../ecs-test.log
             popd
             /bin/rm -rf work
-
-            echo "Deleting message..."
-            aws sqs delete-message \
-                --queue-url ${queue} \
-                --region ${region} \
-                --receipt-handle "${receipt_handle}"
 
         else
             echo "ERROR: Could not extract S3 bucket and key from SQS message."  >> ecs-test.log
         fi
+        echo "Deleting message..." >> ecs-test.log
+        aws sqs delete-message \
+            --queue-url ${queue} \
+            --region ${region} \
+            --receipt-handle "${receipt_handle}"
+
     fi
 done

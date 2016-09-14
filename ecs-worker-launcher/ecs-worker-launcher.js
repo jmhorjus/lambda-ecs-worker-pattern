@@ -51,7 +51,7 @@ exports.handler = function(event, context) {
     if(!exports.checkS3SuffixWhitelist(key, config.s3_key_suffix_whitelist)) {
         context.fail('Suffix for key: ' + key + ' is not in the whitelist')
     } else {
-            // We can now go on. Put the Amazon S3 URL into Amazon SQS and start an Amazon ECS task to process it.
+        // We can now go on. Put the Amazon S3 URL into Amazon SQS and start an Amazon ECS task to process it.
         async.waterfall([
                 function (next) {
                     var params = {
@@ -86,6 +86,5 @@ exports.handler = function(event, context) {
                 }
             }
         );
-
     }
 };

@@ -66,9 +66,8 @@ while [ /bin/true ]; do
             echo "Copying ${key} from S3 bucket ${bucket}..."  >> ../ecs-test.log
             aws s3 cp s3://${bucket}/${key} . --region ${region}
 
-            rand = $RANDOM
-            echo "Copy log file to S3 bucket. RANDOM=${rand}"  >> ../ecs-test.log
-            aws s3 cp ../ecs-test.log s3://${bucket}/ecs-test.${rand}.log
+            echo "Copy log file to S3 bucket."  >> ../ecs-test.log
+            aws s3 cp ../ecs-test.log s3://${bucket}/ecs-test.${key}.log
 
             echo "Cleaning up..."  >> ../ecs-test.log
             popd

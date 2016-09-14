@@ -62,7 +62,7 @@ AWS_CLI_STANDARD_OPTIONS = (
 SSH_USER = 'ec2-user'
 CPU_SHARES = 512  # POV-Ray needs at least half a CPU to work nicely.
 MEMORY = 512
-ZIPFILE_NAME = LAMBDA_FUNCTION_NAME + '.zip'
+ZIPFILE_NAME = LAMBDA_FUNCTION_SUBDIR + '.zip'
 
 BUCKET_PERMISSION_SID = APP_NAME + 'Permission'
 WAIT_TIME = 5  # seconds to allow for eventual consistency to kick in.
@@ -133,10 +133,12 @@ ECS_ROLE_BUCKET_ACCESS_POLICY = {
             "Effect": "Allow",
             "Action": [
                 "s3:ListAllMyBuckets",
-                "sqs:ReceiveMessage"
+                "sqs:ReceiveMessage",
+                "sqs:DeleteMessage"
             ],
             "Resource": [
                 "arn:aws:s3:::*",
+                "arn:aws:sqs:*:*:*",
                 "arn:aws:sqs:*:*:*"
             ]
 
@@ -393,7 +395,7 @@ def update_lambda_function():
         '    --function-name ' + LAMBDA_FUNCTION_NAME +
         '    --zip-file fileb://./' + ZIPFILE_NAME +
         '    --role ' + role_arn +
-        '    --handler ' + LAMBDA_FUNCTION_NAME + '.handler' +
+        '    --handler ' + LAMBDA_FUNCTION_SUBDIR + '.handler' +
         '    --runtime nodejs' +
         AWS_CLI_STANDARD_OPTIONS,
         capture=True

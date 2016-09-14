@@ -71,11 +71,7 @@ exports.handler = function(event, context) {
                         count: 1,
                         cluster: config.cluster
                     };
-                    //ecs.runTask(params, function (err, data) {
-                    if (err) { console.warn('error: ', "Error for would be run task: " + err); }
-                    else { console.info('Would be run task ' + config.task + ' started: ' + JSON.stringify(data.tasks))}
-                    next(err);
-                   // });
+                   
                 }
             ], function (err) {
                 if (err) {

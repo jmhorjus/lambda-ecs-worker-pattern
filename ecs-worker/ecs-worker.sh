@@ -25,7 +25,7 @@ queue=${SQS_QUEUE_URL}
 # Fetch messages and render them until the queue is drained.
 while [ /bin/true ]; do
     # Fetch the next message and extract the S3 URL to fetch the POV-Ray source ZIP from.
-    echo "Fetching messages fom SQS queue: ${queue}..."
+    echo "Fetching messages fom SQS queue: ${queue}..." >> ecs-test.log
     result=$( \
         aws sqs receive-message \
             --queue-url ${queue} \
@@ -36,19 +36,19 @@ while [ /bin/true ]; do
     )
 
     if [ -z "${result}" ]; then
-        echo "No messages left in queue. Exiting."
+        echo "No messages left in queue. Exiting."  >> ecs-test.log
         exit 0
     else
-        echo "Message: ${result}."
+        echo "Message: ${result}."  >> ecs-test.log
 
         receipt_handle=$(echo ${result} | sed -e 's/^.*"\([^"]*\)"\s*\]$/\1/')
-        echo "Receipt handle: ${receipt_handle}."
+        echo "Receipt handle: ${receipt_handle}."  >> ecs-test.log
 
         bucket=$(echo ${result} | sed -e 's/^.*arn:aws:s3:::\([^\\]*\)\\".*$/\1/')
-        echo "Bucket: ${bucket}."
+        echo "Bucket: ${bucket}."  >> ecs-test.log
 
         key=$(echo ${result} | sed -e 's/^.*\\"key\\":\s*\\"\([^\\]*\)\\".*$/\1/')
-        echo "Key: ${key}."
+        echo "Key: ${key}."  >> ecs-test.log
 
         base=${key%.*}
         ext=${key##*.}
@@ -64,29 +64,29 @@ while [ /bin/true ]; do
             mkdir -p work
             pushd work
 
-            echo "Copying ${key} from S3 bucket ${bucket}..."
+            echo "Copying ${key} from S3 bucket ${bucket}..."  >> ecs-test.log
             aws s3 cp s3://${bucket}/${key} . --region ${region}
 
-            echo "Unzipping ${key}..."
+            echo "Unzipping ${key}..."  >> ecs-test.log
             unzip ${key}
 
             if [ -f ${base}.ini ]; then
-                echo "Rendering POV-Ray scene ${base}..."
+                echo "Rendering POV-Ray scene ${base}..."  >> ecs-test.log
                 if povray ${base}; then
                     if [ -f ${base}.png ]; then
-                        echo "Copying result image ${base}.png to s3://${bucket}/${base}.png..."
+                        echo "Copying result image ${base}.png to s3://${bucket}/${base}.png..."  >> ecs-test.log
                         aws s3 cp ${base}.png s3://${bucket}/${base}.png
                     else
-                        echo "ERROR: POV-Ray source did not generate ${base}.png image."
+                        echo "ERROR: POV-Ray source did not generate ${base}.png image."  >> ecs-test.log
                     fi
                 else
-                    echo "ERROR: POV-Ray source did not render successfully."
+                    echo "ERROR: POV-Ray source did not render successfully."  >> ecs-test.log
                 fi
             else
-                echo "ERROR: No ${base}.ini file found in POV-Ray source archive."
+                echo "ERROR: No ${base}.ini file found in POV-Ray source archive."  >> ecs-test.log
             fi
 
-            echo "Cleaning up..."
+            echo "Cleaning up..."  >> ecs-test.log
             popd
             /bin/rm -rf work
 
@@ -97,7 +97,7 @@ while [ /bin/true ]; do
                 --receipt-handle "${receipt_handle}"
 
         else
-            echo "ERROR: Could not extract S3 bucket and key from SQS message."
+            echo "ERROR: Could not extract S3 bucket and key from SQS message."  >> ecs-test.log
         fi
     fi
 done

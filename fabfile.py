@@ -743,7 +743,7 @@ def get_or_create_queue():
         while True:
             time.sleep(WAIT_TIME)
             u = get_queue_url()
-
+            print u
             if u is not None and tries < RETRIES:
                 return u
 

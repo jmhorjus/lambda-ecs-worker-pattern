@@ -262,7 +262,7 @@ def create_cluster():
     local('')
     # local('aws cloudformation delete-stack --stack-name amazon-ecs-cli-setup-dmitrycli')
     # Create the new cluster!
-    local('ecs-cli up  --keypair automation  --capability-iam --size 1 --azs ' + AWS_CLUSTER_REGIONS + ' --security-group-id ' + AWS_SECURITY_GROUP_ID)
+    local('ecs-cli up  --keypair automation  --capability-iam --size 1 --azs ' + AWS_CLUSTER_REGIONS + ' --security-group ' + AWS_SECURITY_GROUP_ID)
 
 
 

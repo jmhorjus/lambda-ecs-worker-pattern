@@ -255,9 +255,18 @@ POV_RAY_SCENE_FILES = [
 # Functions
 
 
+# Cluster Setup
+def create_cluster():
+    
+    # Delete existing cluster and associated cloudformation stack. 
+    local('')
+    # local('aws cloudformation delete-stack --stack-name amazon-ecs-cli-setup-dmitrycli')
+    # Create the new cluster!
+    local('ecs-cli up  --keypair automation  --capability-iam --size 1 --azs ' + AWS_CLUSTER_REGIONS + ' --security-group-id ' + AWS_SECURITY_GROUP_ID)
+
+
+
 # Dependencies and credentials.
-
-
 def update_dependencies():
     local('pip2 install -r requirements.txt')
     local('cd ' + LAMBDA_FUNCTION_SUBDIR + '; npm install ' + LAMBDA_FUNCTION_DEPENDENCIES)
@@ -794,6 +803,7 @@ def update_queue():
 
 
 def setup():
+    #create_cluster()
     update_dependencies()
     update_bucket()
     update_queue()

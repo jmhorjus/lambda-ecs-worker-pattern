@@ -2,14 +2,18 @@
 Some notes 
 
 # good resources
+
 [aws doc][1]
+
 [hello world][2]
 
 # examine queues
-aws sqs list-queues
+	
+	aws sqs list-queues
 
 # find an ECS-optimzed image
-aws ec2 describe-images | grep ecs-optimized
+	
+	aws ec2 describe-images | grep ecs-optimized
 
 ## here is one
 an ecs-optimzed ami *ami-6bb2d67c*

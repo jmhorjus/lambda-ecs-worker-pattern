@@ -22,6 +22,9 @@
 region=${AWS_REGION}
 queue=${SQS_QUEUE_URL}
 
+# Try to mount the EFS drive to the "efs" directory. 
+sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).fs-6acc0223.efs.us-east-1.amazonaws.com:/ /efs
+
 # Fetch messages and render them until the queue is drained.
 while [ /bin/true ]; do
     # Fetch the next message and extract the S3 URL to fetch the POV-Ray source ZIP from.
@@ -68,6 +71,9 @@ while [ /bin/true ]; do
 
             echo "Copy log file to S3 bucket."  >> ../ecs-test.log
             aws s3 cp ../ecs-test.log s3://${bucket}/ecs-test.${key}.log
+
+            echo "Copy log file to EFS..." >> ../ecs-test.log
+            cp ../ecs-test.log /efs/
 
             echo "Cleaning up..."  >> ../ecs-test.log
             popd

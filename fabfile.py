@@ -210,9 +210,13 @@ RUN \
   make install
 
 # Install AWS CLI
-
 RUN \
   pip install awscli
+
+# Install nfs utilities for mounting EFS
+RUN \
+  apt-get install nfs-common &&\
+  mkdir /efs
 
 WORKDIR /
 

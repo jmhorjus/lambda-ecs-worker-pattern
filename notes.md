@@ -3,14 +3,17 @@ Some notes
 
 # good resources
 
-http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_AWSCLI.html
-https://rossfairbanks.com/2015/03/31/hello-world-in-ec2-container-service.html
+[aws doc][1]
+
+[hello world][2]
 
 # examine queues
-aws sqs list-queues
+	
+	aws sqs list-queues
 
 # find an ECS-optimzed image
-aws ec2 describe-images | grep ecs-optimized
+	
+	aws ec2 describe-images | grep ecs-optimized
 
 ## here is one
 an ecs-optimzed ami *ami-6bb2d67c*
@@ -66,3 +69,6 @@ in */.aws/config* I have
 # let's try to do the same the same thing with ecs-cli instead
 
 	ecs-cli up  --keypair automation  --capability-iam --size 1 --azs us-east-1c,us-east-1d
+
+[1]: http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_AWSCLI.html
+[2]: https://rossfairbanks.com/2015/03/31/hello-world-in-ec2-container-service.html
